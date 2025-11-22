@@ -181,22 +181,53 @@ export class ActivityController {
         });
       }
 
-      // Create aggregated activity log entry
+      // Upsert aggregated activity log entry to prevent duplicates
       // This represents the summary of all activities for this file in this commit
-      await prisma.activityLog.create({
-        data: {
-          projectId: project.id,
-          filePath: fileActivity.filePath,
-          language: fileActivity.language,
-          timestamp: fileActivity.firstActivityAt,
-          duration: fileActivity.totalDuration,
-          editor: fileActivity.editor,
-          commitId: fileActivity.commitHash,
+      const existingActivity = await prisma.activityLog.findUnique({
+        where: {
+          projectId_commitId_branch_filePath: {
+            projectId: project.id,
+            commitId: fileActivity.commitHash,
+            branch: fileActivity.branch,
+            filePath: fileActivity.filePath,
+          },
         },
       });
+
+      let durationToAddToCommit = fileActivity.totalDuration;
+
+      if (existingActivity) {
+        // Update existing entry by adding to the duration (in case new activities accumulated)
+        await prisma.activityLog.update({
+          where: { id: existingActivity.id },
+          data: {
+            duration: existingActivity.duration + fileActivity.totalDuration,
+            timestamp: Math.min(
+              Number(existingActivity.timestamp),
+              fileActivity.firstActivityAt
+            ), // Keep earliest timestamp
+          },
+        });
+        // Only add the new duration, not the total (since existing was already counted)
+        durationToAddToCommit = fileActivity.totalDuration;
+      } else {
+        // Create new entry
+        await prisma.activityLog.create({
+          data: {
+            projectId: project.id,
+            filePath: fileActivity.filePath,
+            language: fileActivity.language,
+            timestamp: fileActivity.firstActivityAt,
+            duration: fileActivity.totalDuration,
+            editor: fileActivity.editor,
+            commitId: fileActivity.commitHash,
+            branch: fileActivity.branch,
+          },
+        });
+      }
       syncedCount++;
 
-      // Update the commit's total duration by adding this file's duration
+      // Update the commit's total duration
       const commit = await prisma.gitCommit.findUnique({
         where: {
           projectId_commitHash: {
@@ -210,7 +241,7 @@ export class ActivityController {
         await prisma.gitCommit.update({
           where: { id: commit.id },
           data: {
-            totalDuration: commit.totalDuration + fileActivity.totalDuration,
+            totalDuration: commit.totalDuration + durationToAddToCommit,
           },
         });
       }

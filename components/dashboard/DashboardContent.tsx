@@ -76,9 +76,7 @@ export function DashboardContent({ apiToken }: { apiToken?: string }) {
             <p className="text-xs font-medium mb-1 text-muted-foreground">
               API Token
             </p>
-            <code className="text-sm font-mono">
-              {apiToken.slice(0, 20)}...
-            </code>
+            <code className="text-sm font-mono">{apiToken}</code>
           </div>
         )}
       </div>

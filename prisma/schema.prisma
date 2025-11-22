@@ -78,8 +78,10 @@ model ActivityLog {
   timestamp BigInt // Unix timestamp from extension
   duration  Int // in milliseconds
   commitId  String? // Associated git commit hash
+  branch    String? // Git branch name
   createdAt DateTime @default(now())
 
+  @@unique([projectId, commitId, branch, filePath]) // Prevent duplicate file activities per commit
   @@index([projectId, timestamp])
   @@index([commitId])
 }
