@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
-import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, GitCommit, Calendar, Code, FileCode } from "lucide-react";
+import { notFound } from "next/navigation";
+import { GitCommit, Calendar, Code, FileCode } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 function formatDuration(ms: number) {
@@ -20,14 +19,11 @@ interface PageProps {
 
 export default async function ProjectDetailPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
-  if (!session) {
-    redirect("/api/auth/signin");
-  }
 
   const { id } = await params;
 
   // @ts-expect-error - session user id
-  const userId = session.user.id;
+  const userId = session?.user?.id;
 
   // Fetch project with all related data
   const project = await prisma.project.findFirst({
@@ -121,14 +117,6 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
-          <Link
-            href="/projects"
-            className="inline-flex items-center gap-2 mb-4 hover:underline"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Projects
-          </Link>
           <h1
             className="text-3xl font-bold mb-2"
             style={{ color: "var(--text-primary)" }}
