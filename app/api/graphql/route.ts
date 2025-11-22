@@ -32,8 +32,8 @@ const typeDefs = `
     language: String!
     timestamp: BigInt!
     duration: Int!
-    editor: String!
-    commitHash: String!
+    editor: String
+    commitHash: String
 
   }
 
@@ -43,8 +43,8 @@ const typeDefs = `
     language: String!
     timestamp: BigInt!
     duration: Int!
-    editor: String!
-    commitHash: String!
+    editor: String
+    commitHash: String
   }
 
   type SyncResponse {
