@@ -27,14 +27,14 @@ const typeDefs = `
 
   type ActivityLog {
     id: ID!
-    projectPath: String!
+    projectId: String!
     filePath: String!
     language: String!
     timestamp: BigInt!
     duration: Int!
     editor: String
-    commitHash: String
-
+    commitId: String
+    createdAt: String!
   }
 
   input ActivityInput {
@@ -50,11 +50,23 @@ const typeDefs = `
   type SyncResponse {
     success: Boolean!
     message: String!
+    syncedCount: Int!
   }
 
   type LanguageStat {
     language: String!
-    totalDuration: Int!
+    duration: Int!
+    percentage: Float!
+  }
+
+  type DailyActivity {
+    date: String!
+    duration: Int!
+  }
+
+  type HourlyDistribution {
+    hour: Int!
+    duration: Int!
   }
 
   type ProjectStat {
@@ -62,17 +74,52 @@ const typeDefs = `
     name: String!
     path: String!
     totalDuration: Int!
+    activityCount: Int!
+    lastActive: BigInt!
   }
 
   type DashboardStats {
-    totalDuration: Int!
-    languages: [LanguageStat!]!
+    totalTime: Int!
+    totalProjects: Int!
+    activeProjects: Int!
     projects: [ProjectStat!]!
+    languages: [LanguageStat!]!
+    dailyActivity: [DailyActivity!]!
+    hourlyDistribution: [HourlyDistribution!]!
+  }
+
+  type Project {
+    id: ID!
+    name: String!
+    path: String!
+    userId: String!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type ProjectDetails {
+    id: ID!
+    name: String!
+    path: String!
+    totalDuration: Int!
+    activityCount: Int!
+    topLanguages: [LanguageStat!]!
+    topFiles: [FileStat!]!
+    dailyActivity: [DailyActivity!]!
+    recentActivities: [ActivityLog!]!
+  }
+
+  type FileStat {
+    filePath: String!
+    duration: Int!
   }
 
   type Query {
     hello: String
     dashboardStats: DashboardStats!
+    projects: [Project!]!
+    project(id: ID!): Project
+    projectDetails(id: ID!): ProjectDetails!
   }
 
   type Mutation {
@@ -112,6 +159,27 @@ const resolvers = {
       if (!session?.user?.id) throw new Error("Unauthorized");
 
       return ActivityController.getDashboardStats(session.user.id);
+    },
+
+    projects: async () => {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) throw new Error("Unauthorized");
+
+      return ActivityController.getProjects(session.user.id);
+    },
+
+    project: async (_: any, { id }: { id: string }) => {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) throw new Error("Unauthorized");
+
+      return ActivityController.getProject(session.user.id, id);
+    },
+
+    projectDetails: async (_: any, { id }: { id: string }) => {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) throw new Error("Unauthorized");
+
+      return ActivityController.getProjectDetails(session.user.id, id);
     },
   },
 
