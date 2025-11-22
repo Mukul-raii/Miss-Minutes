@@ -7,7 +7,7 @@
 
 import { useDashboardStats } from "@/lib/hooks";
 import { useDashboardStore, useUIStore } from "@/lib/stores";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration } from "@/lib/utils/index";
 import { useEffect } from "react";
 import {
   TrendingUp,
