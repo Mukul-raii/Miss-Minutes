@@ -32,6 +32,9 @@ const typeDefs = `
     language: String!
     timestamp: BigInt!
     duration: Int!
+    editor: String!
+    commitHash: String!
+
   }
 
   input ActivityInput {
@@ -40,6 +43,8 @@ const typeDefs = `
     language: String!
     timestamp: BigInt!
     duration: Int!
+    editor: String!
+    commitHash: String!
   }
 
   type SyncResponse {
