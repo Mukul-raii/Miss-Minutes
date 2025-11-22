@@ -40,8 +40,9 @@ export class ActivityController {
           projectId: project.id,
           filePath: log.filePath,
           language: log.language,
-          timestamp: BigInt(Math.floor(log.timestamp)),
+          timestamp: log.timestamp,
           duration: log.duration,
+          editor: log.editor,
         },
       });
       syncedCount++;
