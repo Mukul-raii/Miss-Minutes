@@ -196,7 +196,7 @@ export function DashboardContent() {
             return (
               <div
                 key={index}
-                className="flex flex-col items-center gap-2 flex-1 group"
+                className="flex flex-col items-center gap-2 flex-1 group h-full"
               >
                 <div className="relative w-full flex justify-center h-full items-end">
                   {/* Live Indicator for Today */}

@@ -294,7 +294,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             >
               Daily Activity (Last 7 Days)
             </h2>
-            <div className="flex items-end justify-around h-48">
+            <div className="flex items-end justify-around h-48 gap-2">
               {dailyActivity.map((day, index) => {
                 const maxDuration = Math.max(
                   ...dailyActivity.map((d) => d.duration),
@@ -314,11 +314,11 @@ export default async function ProjectDetailPage({ params }: PageProps) {
                 return (
                   <div
                     key={index}
-                    className="flex flex-col items-center gap-2 flex-1"
+                    className="flex flex-col items-center gap-2 flex-1 h-full"
                   >
-                    <div className="relative w-full flex justify-center">
+                    <div className="relative w-full flex justify-center items-end h-full">
                       {isToday && day.duration > 0 && (
-                        <div className="absolute -top-3 flex justify-center">
+                        <div className="absolute -top-3 flex justify-center z-10">
                           <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
