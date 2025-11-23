@@ -72,6 +72,9 @@ export function DashboardContent() {
       dailyActivityFromAPI: stats?.dailyActivity,
       chartData: chartData,
       last7DaysRange: last7Days.map((d) => d.toISOString().split("T")[0]),
+      hasStatsData: !!stats,
+      hasDailyActivity: !!stats?.dailyActivity,
+      dailyActivityLength: stats?.dailyActivity?.length || 0,
     });
   }
 
