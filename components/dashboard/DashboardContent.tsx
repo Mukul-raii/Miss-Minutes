@@ -47,7 +47,12 @@ export function DashboardContent() {
 
   const chartData = last7Days.map((date) => {
     // Convert date to ISO string format (YYYY-MM-DD) to match API data
-    const dateStr = date.toISOString().split("T")[0];
+    // Use local date string to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+
     const activity = stats?.dailyActivity?.find((a) => {
       // Extract date part from activity.date (which is already in YYYY-MM-DD format)
       const activityDateStr =
@@ -67,11 +72,40 @@ export function DashboardContent() {
 
   // Debug logging
   if (typeof window !== "undefined") {
+    const last7DaysLocal = last7Days.map((d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    });
+
     console.log("Dashboard Activity Debug:", {
       todayDate: new Date().toISOString().split("T")[0],
+      todayDateLocal: (() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })(),
       dailyActivityFromAPI: stats?.dailyActivity,
+      dailyActivityDetails: stats?.dailyActivity?.map((a) => ({
+        date: a.date,
+        duration: a.duration,
+        dateType: typeof a.date,
+      })),
       chartData: chartData,
-      last7DaysRange: last7Days.map((d) => d.toISOString().split("T")[0]),
+      chartDataWithDurations: chartData.map((c) => ({
+        label: c.label,
+        dateStr: (() => {
+          const year = c.date.getFullYear();
+          const month = String(c.date.getMonth() + 1).padStart(2, "0");
+          const day = String(c.date.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        })(),
+        duration: c.duration,
+      })),
+      last7DaysRange: last7DaysLocal,
       hasStatsData: !!stats,
       hasDailyActivity: !!stats?.dailyActivity,
       dailyActivityLength: stats?.dailyActivity?.length || 0,
