@@ -1,0 +1,145 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Copy, Check } from "lucide-react";
+
+interface SettingsContentProps {
+  apiToken?: string;
+  email?: string;
+  name?: string;
+}
+
+export function SettingsContent({
+  apiToken,
+  email,
+  name,
+}: SettingsContentProps) {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async () => {
+    if (apiToken) {
+      await navigator.clipboard.writeText(apiToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-1">
+          Manage your account and API settings
+        </p>
+      </div>
+
+      {/* Profile Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Your account information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" value={name || ""} disabled />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" value={email || ""} disabled />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* API Token */}
+      <Card>
+        <CardHeader>
+          <CardTitle>API Token</CardTitle>
+          <CardDescription>
+            Use this token in the VS Code extension to sync your data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="apiToken">Your API Token</Label>
+            <div className="flex gap-2">
+              <Input
+                id="apiToken"
+                value={apiToken || "No token available"}
+                readOnly
+                className="font-mono"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={copyToClipboard}
+                disabled={!apiToken}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Keep this token secure. Anyone with this token can send data to
+              your account.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Extension Setup */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Extension Setup</CardTitle>
+          <CardDescription>
+            How to configure the VS Code extension
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ol className="list-decimal list-inside space-y-2 text-sm">
+            <li>Install the CodeChrono extension from VS Code Marketplace</li>
+            <li>Open VS Code settings (Cmd/Ctrl + ,)</li>
+            <li>Search for &quot;CodeChrono&quot;</li>
+            <li>Paste your API token in the &quot;Api Token&quot; field</li>
+            <li>
+              Start coding and your activity will be tracked automatically!
+            </li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>Irreversible actions</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Delete all data</p>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete all your coding activity data
+              </p>
+            </div>
+            <Button variant="destructive">Delete Data</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { FolderKanban, ArrowUpRight, Clock, Activity } from "lucide-react";
 
-export function DashboardContent({ apiToken }: { apiToken?: string }) {
+export function DashboardContent() {
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { setStats } = useDashboardStore();
 
@@ -21,6 +21,21 @@ export function DashboardContent({ apiToken }: { apiToken?: string }) {
       setStats(stats);
     }
   }, [stats, setStats]);
+
+  // Calculate last 7 days stats
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const last7DaysActivity =
+    stats?.dailyActivity?.filter((activity) => {
+      const activityDate = new Date(activity.date);
+      return activityDate >= sevenDaysAgo;
+    }) || [];
+
+  const last7DaysTime = last7DaysActivity.reduce(
+    (acc, activity) => acc + activity.duration,
+    0
+  );
 
   if (isLoading) {
     return (
@@ -68,22 +83,20 @@ export function DashboardContent({ apiToken }: { apiToken?: string }) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Track your coding activity and productivity
+            Overview of your coding activity for the last 7 days
           </p>
         </div>
-        {apiToken && (
-          <div className="px-4 py-2 rounded-lg bg-muted">
-            <p className="text-xs font-medium mb-1 text-muted-foreground">
-              API Token
-            </p>
-            <code className="text-sm font-mono">{apiToken}</code>
-          </div>
-        )}
+        <Link
+          href="/analytics"
+          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          View Analytics
+        </Link>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Time Card */}
+        {/* Last 7 Days Time Card */}
         <div className="rounded-lg border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-500/10">
@@ -91,9 +104,9 @@ export function DashboardContent({ apiToken }: { apiToken?: string }) {
             </div>
           </div>
           <h3 className="text-3xl font-bold mb-2">
-            {formatDuration(stats.totalTime)}
+            {formatDuration(last7DaysTime)}
           </h3>
-          <p className="text-sm text-muted-foreground">Total Coding Time</p>
+          <p className="text-sm text-muted-foreground">Last 7 Days</p>
         </div>
 
         {/* Total Projects Card */}

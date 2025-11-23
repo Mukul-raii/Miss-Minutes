@@ -12,19 +12,15 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
   SidebarInset,
 } from "@/components/blocks/sidebar";
 import {
   User,
   Calendar,
   Inbox,
-  Search,
   Settings,
   LayoutDashboardIcon,
   LogOut,
-  Clock,
-  Clock12,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -47,13 +43,8 @@ const items = [
     icon: Calendar,
   },
   {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
 ];
@@ -79,7 +70,7 @@ const SidebarWrapper = ({
 
   return (
     <SidebarProvider>
-      <Sidebar variant="sidebar" collapsible="none" className="h-svh ">
+      <Sidebar variant="sidebar" collapsible="none" className="h-svh bg-muted">
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel className="p-2 mb-10">
