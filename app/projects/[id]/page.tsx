@@ -96,20 +96,27 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     .slice(0, 10);
 
   // Daily activity for last 7 days
-  const now = new Date();
-  const sevenDaysAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-  const dailyMap = new Map<string, number>();
-  project.activities.forEach((activity) => {
-    const timestamp = Number(activity.timestamp);
-    if (timestamp >= sevenDaysAgo) {
-      const date = new Date(timestamp).toLocaleDateString();
-      const current = dailyMap.get(date) || 0;
-      dailyMap.set(date, current + activity.duration);
-    }
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i)); // Start from 6 days ago to today
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
-  const dailyActivity = Array.from(dailyMap.entries())
-    .map(([date, duration]) => ({ date, duration }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const dailyActivity = last7Days.map((date) => {
+    const dayActivities = project.activities.filter((activity) => {
+      const activityDate = new Date(Number(activity.timestamp));
+      activityDate.setHours(0, 0, 0, 0);
+      return activityDate.getTime() === date.getTime();
+    });
+
+    const duration = dayActivities.reduce((sum, a) => sum + a.duration, 0);
+
+    return {
+      date: date.toLocaleDateString("en-US", { weekday: "short" }),
+      duration: duration,
+    };
+  });
 
   // Commit statistics
   const totalCommits = project.commits.length;
@@ -130,7 +137,8 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             className="text-3xl font-bold mb-2"
             style={{ color: "var(--text-primary)" }}
           >
-            {project.name}
+            {project.name.charAt(0).toUpperCase() +
+              project.name.slice(1).toLowerCase()}
           </h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             {project.path}
@@ -139,13 +147,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-6 mb-8">
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <Calendar
                 className="w-5 h-5"
@@ -163,13 +165,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <GitCommit
                 className="w-5 h-5"
@@ -187,13 +183,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <Code className="w-5 h-5" style={{ color: "var(--primary)" }} />
               <span className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -208,13 +198,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <FileCode
                 className="w-5 h-5"
@@ -235,13 +219,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
         <div className="grid grid-cols-2 gap-6 mb-8">
           {/* Daily Time Graph */}
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <h2
               className="text-lg font-semibold mb-6"
               style={{ color: "var(--text-primary)" }}
@@ -249,195 +227,167 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               Daily Activity (Last 7 Days)
             </h2>
             <div className="flex items-end justify-around h-48">
-              {dailyActivity.length === 0 ? (
-                <p
-                  className="text-center w-full"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  No activity in the last 7 days
-                </p>
-              ) : (
-                dailyActivity.map((day, index) => {
-                  const maxDuration = Math.max(
-                    ...dailyActivity.map((d) => d.duration)
-                  );
-                  const height =
-                    maxDuration > 0 ? (day.duration / maxDuration) * 100 : 10;
+              {dailyActivity.map((day, index) => {
+                const maxDuration = Math.max(
+                  ...dailyActivity.map((d) => d.duration),
+                  1 // Ensure at least 1 to avoid division by zero
+                );
+                const hasData = dailyActivity.some((d) => d.duration > 0);
+                const heightPercentage = hasData
+                  ? Math.max(
+                      (day.duration / maxDuration) * 100,
+                      day.duration > 0 ? 8 : 0
+                    )
+                  : 0;
 
-                  return (
+                return (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center gap-2 flex-1"
+                  >
                     <div
-                      key={index}
-                      className="flex flex-col items-center gap-2 flex-1"
+                      className="w-full rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
+                      style={{
+                        height: `${heightPercentage}%`,
+                        background: "var(--primary)",
+                        maxWidth: "60px",
+                      }}
+                      title={`${day.date}: ${formatDuration(day.duration)}`}
+                    />
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--text-muted)" }}
                     >
-                      <div
-                        className="w-full rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
-                        style={{
-                          height: `${Math.max(height, 10)}%`,
-                          background: "var(--primary)",
-                          maxWidth: "60px",
-                        }}
-                        title={`${day.date}: ${formatDuration(day.duration)}`}
-                      />
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {new Date(day.date).toLocaleDateString("en-US", {
-                          weekday: "short",
-                        })}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
+                      {day.date}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Language Split Pie */}
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
-            <h2
-              className="text-lg font-semibold mb-6"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Language Distribution
-            </h2>
-            <div className="space-y-4">
-              {languages.length === 0 ? (
-                <p
-                  className="text-center py-8"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  No language data
-                </p>
-              ) : (
-                languages.map((lang, index) => {
-                  const percentage =
-                    totalDuration > 0
-                      ? Math.round((lang.duration / totalDuration) * 100)
-                      : 0;
-                  const colors = [
-                    "var(--primary)",
-                    "var(--primary-light)",
-                    "var(--accent)",
-                    "var(--secondary)",
-                  ];
+          <div className="grid grid-cols-2 gap-3 ">
+            <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
+              <h2
+                className="text-lg font-semibold mb-6"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Language Distribution
+              </h2>
+              <div className="space-y-4">
+                {languages.length === 0 ? (
+                  <p
+                    className="text-center py-8"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    No language data
+                  </p>
+                ) : (
+                  languages.map((lang, index) => {
+                    const percentage =
+                      totalDuration > 0
+                        ? Math.round((lang.duration / totalDuration) * 100)
+                        : 0;
+                    const colors = [
+                      "var(--primary)",
+                      "var(--primary-light)",
+                      "var(--accent)",
+                      "var(--secondary)",
+                    ];
 
-                  return (
-                    <div key={lang.language}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className="text-sm font-medium"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {lang.language}
-                        </span>
-                        <span
-                          className="text-sm"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {percentage}% • {formatDuration(lang.duration)}
-                        </span>
+                    return (
+                      <div key={lang.language}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {lang.language}
+                          </span>
+                          <span
+                            className="text-sm"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {percentage}% • {formatDuration(lang.duration)}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden bg-muted">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${percentage}%`,
+                              background: "var(--primary)",
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: "hsl(var(--muted))" }}
-                      >
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${percentage}%`,
-                            background: colors[index % colors.length],
-                          }}
-                        />
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            {/* Editor Usage - Compact Layout */}
+            <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
+              <h2
+                className="text-lg font-semibold mb-4"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Editor Usage
+              </h2>
+              <div className="space-y-3">
+                {editors.length === 0 ? (
+                  <p
+                    className="text-center py-4 text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    No editor data
+                  </p>
+                ) : (
+                  editors.map((editor) => {
+                    const editorPercentage =
+                      totalDuration > 0
+                        ? (editor.duration / totalDuration) * 100
+                        : 0;
+
+                    return (
+                      <div key={editor.editor} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span
+                            className="font-medium"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {editor.editor}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            {formatDuration(editor.duration)} (
+                            {editorPercentage.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden bg-muted">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${editorPercentage}%`,
+                              background: "var(--primary)",
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6 mb-8">
-          {/* Editor Usage - Compact Layout */}
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
-            <h2
-              className="text-lg font-semibold mb-4"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Editor Usage
-            </h2>
-            <div className="space-y-3">
-              {editors.length === 0 ? (
-                <p
-                  className="text-center py-4 text-sm"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  No editor data
-                </p>
-              ) : (
-                editors.map((editor) => {
-                  const editorPercentage =
-                    totalDuration > 0
-                      ? (editor.duration / totalDuration) * 100
-                      : 0;
-
-                  return (
-                    <div key={editor.editor} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span
-                          className="font-medium"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {editor.editor}
-                        </span>
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          {formatDuration(editor.duration)} (
-                          {editorPercentage.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: "hsl(var(--muted))" }}
-                      >
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${editorPercentage}%`,
-                            background: "var(--primary)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
           {/* Top Files */}
-          <div
-            className="p-6 rounded-xl border shadow-sm"
-            style={{
-              background: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-            }}
-          >
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm">
             <h2
               className="text-lg font-semibold mb-6"
               style={{ color: "var(--text-primary)" }}
@@ -448,10 +398,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               {topFiles.map((file, index) => (
                 <div
                   key={file.filePath}
-                  className="flex items-center gap-3 p-3 rounded-lg"
-                  style={{
-                    background: "hsl(var(--muted))",
-                  }}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted"
                 >
                   <span
                     className="text-xs font-semibold w-6 h-6 rounded-full flex items-center justify-center shrink-0"
@@ -483,6 +430,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               ))}
             </div>
           </div>
+          <div></div>
         </div>
 
         {/* Client Component for Commits with Pagination and Showcase */}

@@ -46,10 +46,15 @@ export function DashboardContent() {
   });
 
   const chartData = last7Days.map((date) => {
+    // Convert date to ISO string format (YYYY-MM-DD) to match API data
+    const dateStr = date.toISOString().split("T")[0];
     const activity = stats?.dailyActivity?.find((a) => {
-      const aDate = new Date(a.date);
-      aDate.setHours(0, 0, 0, 0);
-      return aDate.getTime() === date.getTime();
+      // Extract date part from activity.date (which is already in YYYY-MM-DD format)
+      const activityDateStr =
+        typeof a.date === "string"
+          ? a.date.split("T")[0]
+          : new Date(a.date).toISOString().split("T")[0];
+      return activityDateStr === dateStr;
     });
     return {
       date: date,

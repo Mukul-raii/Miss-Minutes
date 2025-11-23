@@ -52,7 +52,7 @@ export function AnalyticsContent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 ">
       {/* Header with Time Range Filter */}
       <div className="flex items-center justify-between">
         <div>
