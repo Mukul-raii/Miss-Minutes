@@ -118,7 +118,7 @@ export function ProjectDetailClient({
           >
             Recent Git Commits (Time Tracked)
           </h2>
-          <Sheet>
+          {/*     <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <Sparkles className="w-4 h-4" />
@@ -194,10 +194,10 @@ export function ProjectDetailClient({
                 </div>
               </div>
             </SheetContent>
-          </Sheet>
+          </Sheet> */}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 bg-muted">
           {commits.length === 0 ? (
             <p
               className="text-center py-8"
@@ -211,11 +211,7 @@ export function ProjectDetailClient({
               {currentCommits.map((commit) => (
                 <div
                   key={commit.id}
-                  className="p-4 rounded-lg border"
-                  style={{
-                    background: "hsl(var(--card))",
-                    borderColor: "hsl(var(--border))",
-                  }}
+                  className="p-4 rounded-lg border-border bg-muted"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">

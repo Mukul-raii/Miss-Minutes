@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 
 interface SettingsContentProps {
   apiToken?: string;
@@ -98,6 +98,21 @@ export function SettingsContent({
               your account.
             </p>
           </div>
+          <div>
+            <Button
+              variant="default"
+              className="w-full sm:w-auto"
+              onClick={() =>
+                window.open(
+                  "https://marketplace.visualstudio.com/items?itemName=Mukulrai.miss-minutes",
+                  "_blank"
+                )
+              }
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Install VS Code Extension
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -111,14 +126,26 @@ export function SettingsContent({
         </CardHeader>
         <CardContent className="space-y-4">
           <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>Install the Miss-Minutes extension from VS Code Marketplace</li>
-            <li>Open VS Code settings (Cmd/Ctrl + ,)</li>
-            <li>Search for &quot;Miss-Minutes&quot;</li>
-            <li>Paste your API token in the &quot;Api Token&quot; field</li>
+            <li>
+              Click the button above to install the Miss-Minutes extension from
+              VS Code Marketplace
+            </li>
+            <li>
+              In VS Code, run the command &quot;Miss-Minutes: Set API Key&quot;
+              (Cmd/Ctrl + Shift + P)
+            </li>
+            <li>Paste your API token from above</li>
             <li>
               Start coding and your activity will be tracked automatically!
             </li>
           </ol>
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <p className="text-sm font-medium mb-2">Quick Setup:</p>
+            <code className="text-xs bg-background px-2 py-1 rounded">
+              1. Copy API token → 2. Open VS Code → 3. Press Cmd/Ctrl+Shift+P →
+              4. Type &quot;Miss-Minutes: Set API Key&quot; → 5. Paste token
+            </code>
+          </div>
         </CardContent>
       </Card>
 

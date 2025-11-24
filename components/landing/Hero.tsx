@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Download } from "lucide-react";
 
 export function Hero() {
   return (
@@ -40,11 +40,19 @@ export function Hero() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               <Link
-                /*href="/api/auth/signin" */
-                href=""
+                href="https://marketplace.visualstudio.com/items?itemName=Mukulrai.miss-minutes"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-8 py-4 text-lg font-semibold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 flex items-center gap-2"
               >
-                Coming Soon <ArrowRight className="w-5 h-5" />
+                <Download className="w-5 h-5" />
+                Install Extension
+              </Link>
+              <Link
+                href="/api/auth/signin"
+                className="px-8 py-4 text-lg font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-muted/50 transition-all flex items-center gap-2"
+              >
+                Get Started <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
                 href="#how-it-works"

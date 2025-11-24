@@ -287,7 +287,7 @@ export function DashboardContent() {
               {stats.projects.slice(0, 5).map((project) => (
                 <div
                   key={project.id}
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between bg-muted"
                 >
                   <div className="flex-1 min-w-0">
                     <Link
