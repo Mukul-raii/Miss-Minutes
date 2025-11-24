@@ -43,26 +43,34 @@ export function Hero() {
                 href="https://marketplace.visualstudio.com/items?itemName=Mukulrai.miss-minutes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-4 text-lg font-semibold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 flex items-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 text-lg font-semibold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25 flex items-center justify-center gap-2"
               >
                 <Download className="w-5 h-5" />
                 Install Extension
               </Link>
               <Link
                 href="/api/auth/signin"
-                className="px-8 py-4 text-lg font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-muted/50 transition-all flex items-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 text-lg font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-muted/50 transition-all flex items-center justify-center gap-2"
               >
                 Get Started <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link
-                href="#how-it-works"
-                className="px-8 py-4 text-lg font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-muted/50 transition-all flex items-center gap-2"
-              >
-                How it works
-              </Link>
+            </div>
+          </div>
+
+          {/* Right Image */}
+          <div className="relative flex flex-col items-center gap-8">
+            <div className="relative w-full max-w-[500px] aspect-square">
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl -z-10 transform translate-y-10"></div>
+              <Image
+                src="/marvel-miss-minutes-pack.png"
+                alt="Miss-Minutes Tracking"
+                fill
+                className="object-cover drop-shadow-2xl hover:scale-105 transition-transform duration-500 object-left"
+                priority
+              />
             </div>
 
-            <div className="mt-16 flex flex-wrap justify-center lg:justify-start gap-8 text-sm text-muted-foreground">
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
                 <span>No manual timers</span>
@@ -75,20 +83,6 @@ export function Hero() {
                 <CheckCircle2 className="w-5 h-5 text-primary" />
                 <span>VS Code Extension</span>
               </div>
-            </div>
-          </div>
-
-          {/* Right Image */}
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-[500px] aspect-square">
-              <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl -z-10 transform translate-y-10"></div>
-              <Image
-                src="/marvel-miss-minutes-pack.png"
-                alt="Miss-Minutes Tracking"
-                fill
-                className="object-cover drop-shadow-2xl hover:scale-105 transition-transform duration-500 object-left"
-                priority
-              />
             </div>
           </div>
         </div>

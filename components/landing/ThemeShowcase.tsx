@@ -355,17 +355,6 @@ export function ThemeShowcase() {
             </p>
           </div>
         </div>
-
-        {/* CTA */}
-        <div className="text-center mt-16">
-          <p className="text-muted-foreground mb-4">
-            Ready to showcase your coding stats?
-          </p>
-          <Button size="lg" className="rounded-full" disabled>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Coming Soon
-          </Button>
-        </div>
       </div>
     </section>
   );

@@ -57,10 +57,7 @@ export function FloatingNavbar() {
           >
             About
           </Link>
-          <Link
-            /*href="/api/auth/signin" */
-            href=""
-          >
+          <Link href="/api/auth/signin">
             <button
               className={cn(
                 "px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md",
@@ -69,7 +66,7 @@ export function FloatingNavbar() {
                   : "bg-muted text-foreground hover:bg-gray-100 dark:bg-gray-800 dark:text-white"
               )}
             >
-              Coming Soon
+              Get Started
             </button>
           </Link>
         </div>
