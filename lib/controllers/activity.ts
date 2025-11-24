@@ -58,203 +58,231 @@ export class ActivityController {
   }
 
   static async syncCommits(apiToken: string, commits: any[]) {
-    const user = await prisma.user.findUnique({
-      where: { apiToken },
-    });
-
-    if (!user) {
-      throw new Error("Invalid Token");
-    }
-
-    let syncedCount = 0;
-
-    for (const commit of commits) {
-      // Find or create project
-      let project = await prisma.project.findUnique({
-        where: {
-          userId_path: {
-            userId: user.id,
-            path: commit.projectPath,
-          },
-        },
+    try {
+      const user = await prisma.user.findUnique({
+        where: { apiToken },
       });
 
-      if (!project) {
-        project = await prisma.project.create({
-          data: {
-            name: commit.projectPath.split("/").pop() || "Unknown Project",
-            path: commit.projectPath,
-            userId: user.id,
+      if (!user) {
+        throw new Error("Invalid Token");
+      }
+
+      let syncedCount = 0;
+
+      for (const commit of commits) {
+        try {
+          // Find or create project
+          let project = await prisma.project.findUnique({
+            where: {
+              userId_path: {
+                userId: user.id,
+                path: commit.projectPath,
+              },
+            },
+          });
+
+          if (!project) {
+            project = await prisma.project.create({
+              data: {
+                name: commit.projectPath.split("/").pop() || "Unknown Project",
+                path: commit.projectPath,
+                userId: user.id,
+              },
+            });
+          }
+
+          // Create or update git commit
+          await prisma.gitCommit.upsert({
+            where: {
+              projectId_commitHash: {
+                projectId: project.id,
+                commitHash: commit.commitHash,
+              },
+            },
+            update: {
+              message: commit.message,
+              author: commit.author,
+              authorEmail: commit.authorEmail,
+              timestamp: commit.timestamp,
+              filesChanged: commit.filesChanged,
+              linesAdded: commit.linesAdded,
+              linesDeleted: commit.linesDeleted,
+              branch: commit.branch,
+            },
+            create: {
+              projectId: project.id,
+              commitHash: commit.commitHash,
+              message: commit.message,
+              author: commit.author,
+              authorEmail: commit.authorEmail,
+              timestamp: commit.timestamp,
+              filesChanged: commit.filesChanged,
+              linesAdded: commit.linesAdded,
+              linesDeleted: commit.linesDeleted,
+              branch: commit.branch,
+            },
+          });
+          syncedCount++;
+        } catch (error) {
+          console.error(
+            `[syncCommits] Error processing commit ${commit.commitHash}:`,
+            error
+          );
+          throw error;
+        }
+      }
+
+      // Recalculate commit durations for affected projects
+      const projectPaths = [...new Set(commits.map((c) => c.projectPath))];
+      for (const projectPath of projectPaths) {
+        const project = await prisma.project.findUnique({
+          where: {
+            userId_path: {
+              userId: user.id,
+              path: projectPath,
+            },
           },
         });
+
+        if (project) {
+          await this.calculateCommitDurations(project.id);
+        }
       }
 
-      // Create or update git commit
-      await prisma.gitCommit.upsert({
-        where: {
-          projectId_commitHash: {
-            projectId: project.id,
-            commitHash: commit.commitHash,
-          },
-        },
-        update: {
-          message: commit.message,
-          author: commit.author,
-          authorEmail: commit.authorEmail,
-          timestamp: commit.timestamp,
-          filesChanged: commit.filesChanged,
-          linesAdded: commit.linesAdded,
-          linesDeleted: commit.linesDeleted,
-          branch: commit.branch,
-        },
-        create: {
-          projectId: project.id,
-          commitHash: commit.commitHash,
-          message: commit.message,
-          author: commit.author,
-          authorEmail: commit.authorEmail,
-          timestamp: commit.timestamp,
-          filesChanged: commit.filesChanged,
-          linesAdded: commit.linesAdded,
-          linesDeleted: commit.linesDeleted,
-          branch: commit.branch,
-        },
-      });
-      syncedCount++;
+      return {
+        success: true,
+        message: `Synced ${syncedCount} commits`,
+        syncedCount,
+      };
+    } catch (error) {
+      console.error("[syncCommits] Error:", error);
+      throw error;
     }
-
-    // Recalculate commit durations for affected projects
-    const projectPaths = [...new Set(commits.map((c) => c.projectPath))];
-    for (const projectPath of projectPaths) {
-      const project = await prisma.project.findUnique({
-        where: {
-          userId_path: {
-            userId: user.id,
-            path: projectPath,
-          },
-        },
-      });
-
-      if (project) {
-        await this.calculateCommitDurations(project.id);
-      }
-    }
-
-    return {
-      success: true,
-      message: `Synced ${syncedCount} commits`,
-      syncedCount,
-    };
   }
 
   static async syncFileActivities(apiToken: string, fileActivities: any[]) {
-    const user = await prisma.user.findUnique({
-      where: { apiToken },
-    });
+    try {
+      const user = await prisma.user.findUnique({
+        where: { apiToken },
+      });
 
-    if (!user) {
-      throw new Error("Invalid Token");
+      if (!user) {
+        throw new Error("Invalid Token");
+      }
+
+      let syncedCount = 0;
+
+      // Process aggregated file activities
+      for (const fileActivity of fileActivities) {
+        try {
+          // Find or create project
+          let project = await prisma.project.findUnique({
+            where: {
+              userId_path: {
+                userId: user.id,
+                path: fileActivity.projectPath,
+              },
+            },
+          });
+
+          if (!project) {
+            project = await prisma.project.create({
+              data: {
+                name:
+                  fileActivity.projectPath.split("/").pop() ||
+                  "Unknown Project",
+                path: fileActivity.projectPath,
+                userId: user.id,
+              },
+            });
+          }
+
+          // Upsert aggregated activity log entry to prevent duplicates
+          // This represents the summary of all activities for this file in this commit
+          const existingActivity = await prisma.activityLog.findUnique({
+            where: {
+              projectId_commitId_branch_filePath: {
+                projectId: project.id,
+                commitId: fileActivity.commitHash,
+                branch: fileActivity.branch,
+                filePath: fileActivity.filePath,
+              },
+            },
+          });
+
+          let durationToAddToCommit = fileActivity.totalDuration;
+
+          if (existingActivity) {
+            // Update existing entry by adding to the duration (in case new activities accumulated)
+            const earliestTimestamp =
+              BigInt(existingActivity.timestamp) <
+              BigInt(fileActivity.firstActivityAt)
+                ? BigInt(existingActivity.timestamp)
+                : BigInt(fileActivity.firstActivityAt);
+
+            await prisma.activityLog.update({
+              where: { id: existingActivity.id },
+              data: {
+                duration:
+                  existingActivity.duration + fileActivity.totalDuration,
+                timestamp: earliestTimestamp, // Keep earliest timestamp
+              },
+            });
+            // Only add the new duration, not the total (since existing was already counted)
+            durationToAddToCommit = fileActivity.totalDuration;
+          } else {
+            // Create new entry
+            await prisma.activityLog.create({
+              data: {
+                projectId: project.id,
+                filePath: fileActivity.filePath,
+                language: fileActivity.language,
+                timestamp: fileActivity.firstActivityAt,
+                duration: fileActivity.totalDuration,
+                editor: fileActivity.editor,
+                commitId: fileActivity.commitHash,
+                branch: fileActivity.branch,
+              },
+            });
+          }
+          syncedCount++;
+
+          // Update the commit's total duration
+          const commit = await prisma.gitCommit.findUnique({
+            where: {
+              projectId_commitHash: {
+                projectId: project.id,
+                commitHash: fileActivity.commitHash,
+              },
+            },
+          });
+
+          if (commit) {
+            await prisma.gitCommit.update({
+              where: { id: commit.id },
+              data: {
+                totalDuration: commit.totalDuration + durationToAddToCommit,
+              },
+            });
+          }
+        } catch (error) {
+          console.error(
+            `[syncFileActivities] Error processing file activity for ${fileActivity.filePath} in commit ${fileActivity.commitHash}:`,
+            error
+          );
+          throw error;
+        }
+      }
+
+      return {
+        success: true,
+        message: `Synced ${syncedCount} file activities`,
+        syncedCount,
+      };
+    } catch (error) {
+      console.error("[syncFileActivities] Error:", error);
+      throw error;
     }
-
-    let syncedCount = 0;
-
-    // Process aggregated file activities
-    for (const fileActivity of fileActivities) {
-      // Find or create project
-      let project = await prisma.project.findUnique({
-        where: {
-          userId_path: {
-            userId: user.id,
-            path: fileActivity.projectPath,
-          },
-        },
-      });
-
-      if (!project) {
-        project = await prisma.project.create({
-          data: {
-            name:
-              fileActivity.projectPath.split("/").pop() || "Unknown Project",
-            path: fileActivity.projectPath,
-            userId: user.id,
-          },
-        });
-      }
-
-      // Upsert aggregated activity log entry to prevent duplicates
-      // This represents the summary of all activities for this file in this commit
-      const existingActivity = await prisma.activityLog.findUnique({
-        where: {
-          projectId_commitId_branch_filePath: {
-            projectId: project.id,
-            commitId: fileActivity.commitHash,
-            branch: fileActivity.branch,
-            filePath: fileActivity.filePath,
-          },
-        },
-      });
-
-      let durationToAddToCommit = fileActivity.totalDuration;
-
-      if (existingActivity) {
-        // Update existing entry by adding to the duration (in case new activities accumulated)
-        const earliestTimestamp =
-          BigInt(existingActivity.timestamp) <
-          BigInt(fileActivity.firstActivityAt)
-            ? BigInt(existingActivity.timestamp)
-            : BigInt(fileActivity.firstActivityAt);
-
-        await prisma.activityLog.update({
-          where: { id: existingActivity.id },
-          data: {
-            duration: existingActivity.duration + fileActivity.totalDuration,
-            timestamp: earliestTimestamp, // Keep earliest timestamp
-          },
-        });
-        // Only add the new duration, not the total (since existing was already counted)
-        durationToAddToCommit = fileActivity.totalDuration;
-      } else {
-        // Create new entry
-        await prisma.activityLog.create({
-          data: {
-            projectId: project.id,
-            filePath: fileActivity.filePath,
-            language: fileActivity.language,
-            timestamp: fileActivity.firstActivityAt,
-            duration: fileActivity.totalDuration,
-            editor: fileActivity.editor,
-            commitId: fileActivity.commitHash,
-            branch: fileActivity.branch,
-          },
-        });
-      }
-      syncedCount++;
-
-      // Update the commit's total duration
-      const commit = await prisma.gitCommit.findUnique({
-        where: {
-          projectId_commitHash: {
-            projectId: project.id,
-            commitHash: fileActivity.commitHash,
-          },
-        },
-      });
-
-      if (commit) {
-        await prisma.gitCommit.update({
-          where: { id: commit.id },
-          data: {
-            totalDuration: commit.totalDuration + durationToAddToCommit,
-          },
-        });
-      }
-    }
-
-    return {
-      success: true,
-      message: `Synced ${syncedCount} file activities`,
-      syncedCount,
-    };
   }
 
   static async syncDailyStats(apiToken: string, dailyStats: any[]) {

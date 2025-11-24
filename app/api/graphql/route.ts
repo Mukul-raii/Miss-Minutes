@@ -247,43 +247,67 @@ const resolvers = {
 
   Mutation: {
     syncActivity: async (_: any, { input }: any, context: any) => {
-      const token = context.request.headers
-        ?.get("authorization")
-        ?.replace("Bearer ", "");
+      try {
+        const token = context.request.headers
+          ?.get("authorization")
+          ?.replace("Bearer ", "");
 
-      if (!token) throw new Error("Unauthorized");
+        if (!token) throw new Error("Unauthorized");
 
-      return ActivityController.syncActivities(token, input);
+        return await ActivityController.syncActivities(token, input);
+      } catch (error) {
+        console.error("[syncActivity] Error:", error);
+        throw error;
+      }
     },
 
     syncFileActivities: async (_: any, { input }: any, context: any) => {
-      const token = context.request.headers
-        ?.get("authorization")
-        ?.replace("Bearer ", "");
+      try {
+        const token = context.request.headers
+          ?.get("authorization")
+          ?.replace("Bearer ", "");
 
-      if (!token) throw new Error("Unauthorized");
+        if (!token) throw new Error("Unauthorized");
 
-      return ActivityController.syncFileActivities(token, input);
+        console.log(
+          `[syncFileActivities] Processing ${input.length} file activities`
+        );
+        return await ActivityController.syncFileActivities(token, input);
+      } catch (error) {
+        console.error("[syncFileActivities] Error:", error);
+        throw error;
+      }
     },
 
     syncCommits: async (_: any, { input }: any, context: any) => {
-      const token = context.request.headers
-        ?.get("authorization")
-        ?.replace("Bearer ", "");
+      try {
+        const token = context.request.headers
+          ?.get("authorization")
+          ?.replace("Bearer ", "");
 
-      if (!token) throw new Error("Unauthorized");
+        if (!token) throw new Error("Unauthorized");
 
-      return ActivityController.syncCommits(token, input);
+        console.log(`[syncCommits] Processing ${input.length} commits`);
+        return await ActivityController.syncCommits(token, input);
+      } catch (error) {
+        console.error("[syncCommits] Error:", error);
+        throw error;
+      }
     },
 
     syncDailyStats: async (_: any, { input }: any, context: any) => {
-      const token = context.request.headers
-        ?.get("authorization")
-        ?.replace("Bearer ", "");
+      try {
+        const token = context.request.headers
+          ?.get("authorization")
+          ?.replace("Bearer ", "");
 
-      if (!token) throw new Error("Unauthorized");
+        if (!token) throw new Error("Unauthorized");
 
-      return ActivityController.syncDailyStats(token, input);
+        return await ActivityController.syncDailyStats(token, input);
+      } catch (error) {
+        console.error("[syncDailyStats] Error:", error);
+        throw error;
+      }
     },
   },
 };
