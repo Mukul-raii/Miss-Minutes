@@ -417,6 +417,34 @@ export class ActivityController {
       },
     });
 
+    console.log(
+      `[Dashboard] Found ${dailyStats.length} daily stats records for last 30 days`
+    );
+
+    // Get last 7 days of activities from ActivityLog (for when DailyStats is empty or incomplete)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const sevenDaysTimestamp = BigInt(sevenDaysAgo.getTime());
+
+    const recentActivities = await prisma.activityLog.findMany({
+      where: {
+        project: {
+          userId,
+        },
+        timestamp: {
+          gte: sevenDaysTimestamp,
+        },
+      },
+      include: {
+        project: true,
+      },
+    });
+
+    console.log(
+      `[Dashboard] Found ${recentActivities.length} activities from last 7 days`
+    );
+
     // Also get current day activities from ActivityLog (not yet aggregated)
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -475,6 +503,71 @@ export class ActivityController {
       dailyMap.set(dateStr, (dailyMap.get(dateStr) || 0) + stat.totalDuration);
     });
 
+    // If DailyStats is empty or incomplete, use ActivityLog for last 7 days
+    if (dailyStats.length === 0 || recentActivities.length > 0) {
+      console.log(
+        `[Dashboard] Processing ${recentActivities.length} recent activities (fallback/supplement)`
+      );
+
+      // Group recent activities by date
+      const activityByDate = new Map<string, typeof recentActivities>();
+      recentActivities.forEach((activity) => {
+        const date = new Date(Number(activity.timestamp));
+        const dateStr = date.toISOString().split("T")[0];
+
+        if (!activityByDate.has(dateStr)) {
+          activityByDate.set(dateStr, []);
+        }
+        activityByDate.get(dateStr)!.push(activity);
+      });
+
+      // Process each day's activities
+      activityByDate.forEach((activities, dateStr) => {
+        // Skip if we already have this date in DailyStats
+        if (dailyMap.has(dateStr)) {
+          return;
+        }
+
+        let dayDuration = 0;
+        activities.forEach((activity) => {
+          dayDuration += activity.duration;
+          totalTime += activity.duration;
+
+          // Project stats
+          const projectKey = activity.projectId;
+          if (!projectMap.has(projectKey)) {
+            projectMap.set(projectKey, {
+              id: activity.project.id,
+              name: activity.project.name,
+              path: activity.project.path,
+              totalDuration: 0,
+              activityCount: 0,
+              lastActive: BigInt(0),
+            });
+          }
+          const projectStat = projectMap.get(projectKey);
+          projectStat.totalDuration += activity.duration;
+          projectStat.activityCount++;
+          projectStat.lastActive =
+            activity.timestamp > projectStat.lastActive
+              ? activity.timestamp
+              : projectStat.lastActive;
+
+          // Language stats
+          languageMap.set(
+            activity.language,
+            (languageMap.get(activity.language) || 0) + activity.duration
+          );
+        });
+
+        // Add to daily map
+        dailyMap.set(dateStr, dayDuration);
+        console.log(
+          `[Dashboard] Added ${dayDuration}ms for date ${dateStr} from ActivityLog`
+        );
+      });
+    }
+
     // Process today's activities (not yet in DailyStats)
     const todayDateStr = new Date().toISOString().split("T")[0];
     let todayDuration = 0;
@@ -486,7 +579,12 @@ export class ActivityController {
 
     todayActivities.forEach((activity) => {
       todayDuration += activity.duration;
-      totalTime += activity.duration;
+
+      // Only add to totalTime if not already counted in recentActivities
+      const alreadyCounted = recentActivities.some((a) => a.id === activity.id);
+      if (!alreadyCounted) {
+        totalTime += activity.duration;
+      }
 
       // Project stats
       const projectKey = activity.projectId;
@@ -501,32 +599,36 @@ export class ActivityController {
         });
       }
       const projectStat = projectMap.get(projectKey);
-      projectStat.totalDuration += activity.duration;
-      projectStat.activityCount++;
+
+      // Only increment if not already counted
+      if (!alreadyCounted) {
+        projectStat.totalDuration += activity.duration;
+        projectStat.activityCount++;
+      }
+
       projectStat.lastActive =
         activity.timestamp > projectStat.lastActive
           ? activity.timestamp
           : projectStat.lastActive;
 
       // Language stats
-      languageMap.set(
-        activity.language,
-        (languageMap.get(activity.language) || 0) + activity.duration
-      );
+      if (!alreadyCounted) {
+        languageMap.set(
+          activity.language,
+          (languageMap.get(activity.language) || 0) + activity.duration
+        );
+      }
       todayLanguages.set(
         activity.language,
         (todayLanguages.get(activity.language) || 0) + activity.duration
       );
     });
 
-    // Add today's duration to daily map
+    // Update today's duration in daily map (overwrite to avoid double counting)
     if (todayDuration > 0) {
-      dailyMap.set(
-        todayDateStr,
-        (dailyMap.get(todayDateStr) || 0) + todayDuration
-      );
+      dailyMap.set(todayDateStr, todayDuration);
       console.log(
-        `[Dashboard] Added today's duration: ${todayDuration}ms to date ${todayDateStr}`
+        `[Dashboard] Set today's total duration: ${todayDuration}ms for date ${todayDateStr}`
       );
     } else {
       console.log(`[Dashboard] No activity for today yet`);
